@@ -408,7 +408,7 @@ int Atari800_DetectFileType(const char *filename) {
 int Atari800_OpenFile(const char *filename, int reboot, int diskno, int readonly) {
   // Remove cart if exist
   CART_Remove();
-  
+
 	int type = Atari800_DetectFileType(filename);
 
 	switch (type) {
@@ -472,7 +472,7 @@ int Atari800_Initialise(void) {
   ATARI.atari_joyemulation  = 1;
   ATARI.atari_autoload = TRUE;
 */
-  
+
   Device_Initialise();
 	RTIME_Initialise();
 	SIO_Initialise ();
@@ -480,7 +480,7 @@ int Atari800_Initialise(void) {
 
 	INPUT_Initialise();
 
-	// Platform Specific Initialisation 
+	// Platform Specific Initialisation
 	Atari_Initialise();
 
 	// Initialise Custom Chips

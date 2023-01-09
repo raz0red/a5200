@@ -113,7 +113,7 @@ int	samp_consol_val = 0;		/* actual value of console sound */
 #endif  /* VOL_ONLY_SOUND */
 
 static uint32 snd_freq17 = FREQ_17_EXACT;
-int32 snd_playback_freq = 44100;
+int32 snd_playback_freq = 48000;
 uint8 snd_num_pokeys = 1;
 static int snd_flags = 0;
 static int mz_quality = 0;		/* default quality for mzpokeysnd */
@@ -258,7 +258,7 @@ int Pokey_DoInit(void) {
 				snd_num_pokeys, snd_flags, mz_quality
 		);
   }
-	else 
+	else
 # endif
   {
 		return Pokey_sound_init_rf(snd_freq17, (uint16) snd_playback_freq,
@@ -266,7 +266,7 @@ int Pokey_DoInit(void) {
   }
 }
 
-int 
+int
 Pokey_sound_init(uint32 freq17, uint16 playback_freq, uint8 num_pokeys,
                      unsigned int flags
 )
@@ -461,7 +461,7 @@ static void Update_pokey_sound_rf(uint16 addr, uint8 val, uint8 chip, uint8 gain
 #ifdef VOL_ONLY_SOUND
 
 			if ((AUDC[chan + chip_offs] & VOL_ONLY)) {
- 
+
 	  		{
 					sampbuf_lastval += AUDV[chan + chip_offs]
 						-sampbuf_AUDV[chan + chip_offs];
@@ -534,7 +534,7 @@ static void Update_pokey_sound_rf(uint16 addr, uint8 val, uint8 chip, uint8 gain
 /*                                                                           */
 /*****************************************************************************/
 
-//void Pokey_process(void *sndbuffer) 
+//void Pokey_process(void *sndbuffer)
 //void Pokey_process_8(void *sndbuffer, unsigned sndn)
 void Pokey_process(void *sndbuffer, unsigned sndn)
 {

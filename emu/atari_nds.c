@@ -41,7 +41,7 @@ static int first_col = 32; */
 /* -------------------------------------------------------------------------- */
 void Atari_Initialise(void) {
 #ifdef SOUND
-  // initialise sound routines 
+  // initialise sound routines
   Sound_Initialise();
 #endif
 
@@ -60,21 +60,3 @@ int Atari_Exit(int run_monitor) {
   return 0;
 }
 
-/* -------------------------------------------------------------------------- */
-unsigned int Atari_PORT(unsigned int num) {
-	if (num == 0)
-		return (stick1 << 4) | stick0;
-	return 0xff;
-}
-
-/* -------------------------------------------------------------------------- */
-unsigned int Atari_TRIG(unsigned int num) {
-  switch (num) {
-    case 0:
-      return trig0;
-    case 1:
-      return trig1;
-    default:
-      return 1;
-  }
-}

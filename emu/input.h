@@ -216,7 +216,7 @@
 /* Note: key_consol should be CONSOL_NONE if no consol key is pressed.
    When a consol key is pressed, corresponding bit should be cleared.
  */
- 
+
 #define CONSOL_NONE		0x07
 #define CONSOL_START	0x01
 #define CONSOL_SELECT	0x02
@@ -239,6 +239,12 @@ extern int key_consol;	/* Start, Select and Option keys */
 #define	STICK_UL		0x0a
 #define	STICK_FORWARD	0x0e
 #define	STICK_UR		0x06
+
+
+/* 5200 joysticks values */
+#define JOY_5200_MIN    8
+#define JOY_5200_CENTER 114
+#define JOY_5200_MAX    220
 
 /* joy_autofire values */
 #define AUTOFIRE_OFF	0

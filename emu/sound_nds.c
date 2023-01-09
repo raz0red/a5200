@@ -8,7 +8,7 @@
 
 //#define DSPRATE 22050
 //#define DSPRATE 11025
-#define DSPRATE 44100
+#define DSPRATE 48000
 
 
 void Sound_Initialise(void) {
@@ -16,6 +16,7 @@ void Sound_Initialise(void) {
   Pokey_sound_init(FREQ_17_EXACT, DSPRATE, 2, 0);
 #else
   Pokey_sound_init(FREQ_17_EXACT, DSPRATE, 1, 0); //SND_BIT16);
+  printf("## Pokey_sound_init.\n");
 #endif
 }
 

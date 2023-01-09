@@ -102,7 +102,7 @@ static void AllocXEMemory(void)
 }
 
 void MEMORY_InitialiseMachine(void) {
-	antic_xe_ptr = NULL;
+	// antic_xe_ptr = NULL;
 #if 0
 	switch (machine_type) {
 	case MACHINE_OSA:
@@ -173,7 +173,7 @@ void MEMORY_InitialiseMachine(void) {
 		SetROM(0xd800, 0xffff);
 		break;
 	case MACHINE_5200:
-#endif  
+#endif
 		memcpy(memory + 0xf800, atari_os, 0x800);
 		dFillMem(0x0000, 0x00, 0xf800);
 		SetRAM(0x0000, 0x3fff);
@@ -202,7 +202,7 @@ void MEMORY_InitialiseMachine(void) {
 #if 0
 		break;
 	}
-#endif  
+#endif
 	AllocXEMemory();
 	Coldstart();
 }
@@ -360,7 +360,7 @@ void MemStateRead(UBYTE SaveVerbose) {
 		ReadUBYTE(&under_atarixl_os[0], 16384);
 	}
 
-	antic_xe_ptr = NULL;
+	// antic_xe_ptr = NULL;
 	AllocXEMemory();
 	if (ram_size > 64) {
 		ReadUBYTE(&atarixe_memory[0], atarixe_memory_size);
@@ -410,153 +410,153 @@ static int basic_disabled(UBYTE portb)
 /* Note: this function is only for XL/XE! */
 void MEMORY_HandlePORTB(UBYTE byte, UBYTE oldval)
 {
-	/* Switch XE memory bank in 0x4000-0x7fff */
-	if (ram_size > 64) {
-		int bank = 0;
-		/* bank = 0 : base RAM */
-		/* bank = 1..64 : extended RAM */
-		if ((byte & 0x10) == 0)
-			switch (ram_size) {
-			case 128:
-				bank = ((byte & 0x0c) >> 2) + 1;
-				break;
-			case 192:
-				bank = (((byte & 0x0c) + ((byte & 0x40) >> 2)) >> 2) + 1;
-				break;
-			case RAM_320_RAMBO:
-				bank = (((byte & 0x0c) + ((byte & 0x60) >> 1)) >> 2) + 1;
-				break;
-			case RAM_320_COMPY_SHOP:
-				bank = (((byte & 0x0c) + ((byte & 0xc0) >> 2)) >> 2) + 1;
-				break;
-			case 576:
-				bank = (((byte & 0x0e) + ((byte & 0x60) >> 1)) >> 1) + 1;
-				break;
-			case 1088:
-				bank = (((byte & 0x0e) + ((byte & 0xe0) >> 1)) >> 1) + 1;
-				break;
-			}
-		/* Note: in Compy Shop bit 5 (ANTIC access) disables Self Test */
-		if (selftest_enabled && (bank != xe_bank || (ram_size == RAM_320_COMPY_SHOP && (byte & 0x20) == 0))) {
-			/* Disable Self Test ROM */
-			memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
-			SetRAM(0x5000, 0x57ff);
-			selftest_enabled = FALSE;
-		}
-		if (bank != xe_bank) {
-			memcpy(atarixe_memory + (xe_bank << 14), memory + 0x4000, 16384);
-			memcpy(memory + 0x4000, atarixe_memory + (bank << 14), 16384);
-			xe_bank = bank;
-		}
-		if (ram_size == 128 || ram_size == RAM_320_COMPY_SHOP)
-			switch (byte & 0x30) {
-			case 0x20:	/* ANTIC: base, CPU: extended */
-				antic_xe_ptr = atarixe_memory;
-				break;
-			case 0x10:	/* ANTIC: extended, CPU: base */
-				if (ram_size == 128)
-					antic_xe_ptr = atarixe_memory + ((((byte & 0x0c) >> 2) + 1) << 14);
-				else	/* 320 Compy Shop */
-					antic_xe_ptr = atarixe_memory + (((((byte & 0x0c) + ((byte & 0xc0) >> 2)) >> 2) + 1) << 14);
-				break;
-			default:	/* ANTIC same as CPU */
-				antic_xe_ptr = NULL;
-				break;
-			}
-	}
+	// /* Switch XE memory bank in 0x4000-0x7fff */
+	// if (ram_size > 64) {
+	// 	int bank = 0;
+	// 	/* bank = 0 : base RAM */
+	// 	/* bank = 1..64 : extended RAM */
+	// 	if ((byte & 0x10) == 0)
+	// 		switch (ram_size) {
+	// 		case 128:
+	// 			bank = ((byte & 0x0c) >> 2) + 1;
+	// 			break;
+	// 		case 192:
+	// 			bank = (((byte & 0x0c) + ((byte & 0x40) >> 2)) >> 2) + 1;
+	// 			break;
+	// 		case RAM_320_RAMBO:
+	// 			bank = (((byte & 0x0c) + ((byte & 0x60) >> 1)) >> 2) + 1;
+	// 			break;
+	// 		case RAM_320_COMPY_SHOP:
+	// 			bank = (((byte & 0x0c) + ((byte & 0xc0) >> 2)) >> 2) + 1;
+	// 			break;
+	// 		case 576:
+	// 			bank = (((byte & 0x0e) + ((byte & 0x60) >> 1)) >> 1) + 1;
+	// 			break;
+	// 		case 1088:
+	// 			bank = (((byte & 0x0e) + ((byte & 0xe0) >> 1)) >> 1) + 1;
+	// 			break;
+	// 		}
+	// 	/* Note: in Compy Shop bit 5 (ANTIC access) disables Self Test */
+	// 	if (selftest_enabled && (bank != xe_bank || (ram_size == RAM_320_COMPY_SHOP && (byte & 0x20) == 0))) {
+	// 		/* Disable Self Test ROM */
+	// 		memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
+	// 		SetRAM(0x5000, 0x57ff);
+	// 		selftest_enabled = FALSE;
+	// 	}
+	// 	if (bank != xe_bank) {
+	// 		memcpy(atarixe_memory + (xe_bank << 14), memory + 0x4000, 16384);
+	// 		memcpy(memory + 0x4000, atarixe_memory + (bank << 14), 16384);
+	// 		xe_bank = bank;
+	// 	}
+	// 	if (ram_size == 128 || ram_size == RAM_320_COMPY_SHOP)
+	// 		switch (byte & 0x30) {
+	// 		case 0x20:	/* ANTIC: base, CPU: extended */
+	// 			antic_xe_ptr = atarixe_memory;
+	// 			break;
+	// 		case 0x10:	/* ANTIC: extended, CPU: base */
+	// 			if (ram_size == 128)
+	// 				antic_xe_ptr = atarixe_memory + ((((byte & 0x0c) >> 2) + 1) << 14);
+	// 			else	/* 320 Compy Shop */
+	// 				antic_xe_ptr = atarixe_memory + (((((byte & 0x0c) + ((byte & 0xc0) >> 2)) >> 2) + 1) << 14);
+	// 			break;
+	// 		default:	/* ANTIC same as CPU */
+	// 			antic_xe_ptr = NULL;
+	// 			break;
+	// 		}
+	// }
 
-	/* Enable/disable OS ROM in 0xc000-0xcfff and 0xd800-0xffff */
-	if ((oldval ^ byte) & 0x01) {
-		if (byte & 0x01) {
-			/* Enable OS ROM */
-			if (ram_size > 48) {
-				memcpy(under_atarixl_os, memory + 0xc000, 0x1000);
-				memcpy(under_atarixl_os + 0x1800, memory + 0xd800, 0x2800);
-				SetROM(0xc000, 0xcfff);
-				SetROM(0xd800, 0xffff);
-			}
-			memcpy(memory + 0xc000, atari_os, 0x1000);
-			memcpy(memory + 0xd800, atari_os + 0x1800, 0x2800);
-			Atari800_PatchOS();
-		}
-		else {
-			/* Disable OS ROM */
-			if (ram_size > 48) {
-				memcpy(memory + 0xc000, under_atarixl_os, 0x1000);
-				memcpy(memory + 0xd800, under_atarixl_os + 0x1800, 0x2800);
-				SetRAM(0xc000, 0xcfff);
-				SetRAM(0xd800, 0xffff);
-			} else {
-				dFillMem(0xc000, 0xff, 0x1000);
-				dFillMem(0xd800, 0xff, 0x2800);
-			}
-			/* When OS ROM is disabled we also have to disable Self Test - Jindroush */
-			if (selftest_enabled) {
-				if (ram_size > 20) {
-					memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
-					SetRAM(0x5000, 0x57ff);
-				}
-				else
-					dFillMem(0x5000, 0xff, 0x800);
-				selftest_enabled = FALSE;
-			}
-		}
-	}
+	// /* Enable/disable OS ROM in 0xc000-0xcfff and 0xd800-0xffff */
+	// if ((oldval ^ byte) & 0x01) {
+	// 	if (byte & 0x01) {
+	// 		/* Enable OS ROM */
+	// 		if (ram_size > 48) {
+	// 			memcpy(under_atarixl_os, memory + 0xc000, 0x1000);
+	// 			memcpy(under_atarixl_os + 0x1800, memory + 0xd800, 0x2800);
+	// 			SetROM(0xc000, 0xcfff);
+	// 			SetROM(0xd800, 0xffff);
+	// 		}
+	// 		memcpy(memory + 0xc000, atari_os, 0x1000);
+	// 		memcpy(memory + 0xd800, atari_os + 0x1800, 0x2800);
+	// 		Atari800_PatchOS();
+	// 	}
+	// 	else {
+	// 		/* Disable OS ROM */
+	// 		if (ram_size > 48) {
+	// 			memcpy(memory + 0xc000, under_atarixl_os, 0x1000);
+	// 			memcpy(memory + 0xd800, under_atarixl_os + 0x1800, 0x2800);
+	// 			SetRAM(0xc000, 0xcfff);
+	// 			SetRAM(0xd800, 0xffff);
+	// 		} else {
+	// 			dFillMem(0xc000, 0xff, 0x1000);
+	// 			dFillMem(0xd800, 0xff, 0x2800);
+	// 		}
+	// 		/* When OS ROM is disabled we also have to disable Self Test - Jindroush */
+	// 		if (selftest_enabled) {
+	// 			if (ram_size > 20) {
+	// 				memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
+	// 				SetRAM(0x5000, 0x57ff);
+	// 			}
+	// 			else
+	// 				dFillMem(0x5000, 0xff, 0x800);
+	// 			selftest_enabled = FALSE;
+	// 		}
+	// 	}
+	// }
 
-	/* Enable/disable BASIC ROM in 0xa000-0xbfff */
-	if (!cartA0BF_enabled) {
-		/* BASIC is disabled if bit 1 set or accessing extended 576K or 1088K memory */
-		int now_disabled = basic_disabled(byte);
-		if (basic_disabled(oldval) != now_disabled) {
-			if (now_disabled) {
-				/* Disable BASIC ROM */
-				if (ram_size > 40) {
-					memcpy(memory + 0xa000, under_atari_basic, 0x2000);
-					SetRAM(0xa000, 0xbfff);
-				}
-				else
-					dFillMem(0xa000, 0xff, 0x2000);
-			}
-			else {
-				/* Enable BASIC ROM */
-				if (ram_size > 40) {
-					memcpy(under_atari_basic, memory + 0xa000, 0x2000);
-					SetROM(0xa000, 0xbfff);
-				}
-				memcpy(memory + 0xa000, atari_basic, 0x2000);
-			}
-		}
-	}
+	// /* Enable/disable BASIC ROM in 0xa000-0xbfff */
+	// if (!cartA0BF_enabled) {
+	// 	/* BASIC is disabled if bit 1 set or accessing extended 576K or 1088K memory */
+	// 	int now_disabled = basic_disabled(byte);
+	// 	if (basic_disabled(oldval) != now_disabled) {
+	// 		if (now_disabled) {
+	// 			/* Disable BASIC ROM */
+	// 			if (ram_size > 40) {
+	// 				memcpy(memory + 0xa000, under_atari_basic, 0x2000);
+	// 				SetRAM(0xa000, 0xbfff);
+	// 			}
+	// 			else
+	// 				dFillMem(0xa000, 0xff, 0x2000);
+	// 		}
+	// 		else {
+	// 			/* Enable BASIC ROM */
+	// 			if (ram_size > 40) {
+	// 				memcpy(under_atari_basic, memory + 0xa000, 0x2000);
+	// 				SetROM(0xa000, 0xbfff);
+	// 			}
+	// 			memcpy(memory + 0xa000, atari_basic, 0x2000);
+	// 		}
+	// 	}
+	// }
 
-	/* Enable/disable Self Test ROM in 0x5000-0x57ff */
-	if (byte & 0x80) {
-		if (selftest_enabled) {
-			/* Disable Self Test ROM */
-			if (ram_size > 20) {
-				memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
-				SetRAM(0x5000, 0x57ff);
-			}
-			else
-				dFillMem(0x5000, 0xff, 0x800);
-			selftest_enabled = FALSE;
-		}
-	}
-	else {
-		/* We can enable Self Test only if the OS ROM is enabled */
-		/* and we're not accessing extended 320K Compy Shop or 1088K memory */
-		/* Note: in Compy Shop bit 5 (ANTIC access) disables Self Test */
-		if (!selftest_enabled && (byte & 0x01)
-		&& !((byte & 0x30) != 0x30 && ram_size == RAM_320_COMPY_SHOP)
-		&& !((byte & 0x10) == 0 && ram_size == 1088)) {
-			/* Enable Self Test ROM */
-			if (ram_size > 20) {
-				memcpy(under_atarixl_os + 0x1000, memory + 0x5000, 0x800);
-				SetROM(0x5000, 0x57ff);
-			}
-			memcpy(memory + 0x5000, atari_os + 0x1000, 0x800);
-			selftest_enabled = TRUE;
-		}
-	}
+	// /* Enable/disable Self Test ROM in 0x5000-0x57ff */
+	// if (byte & 0x80) {
+	// 	if (selftest_enabled) {
+	// 		/* Disable Self Test ROM */
+	// 		if (ram_size > 20) {
+	// 			memcpy(memory + 0x5000, under_atarixl_os + 0x1000, 0x800);
+	// 			SetRAM(0x5000, 0x57ff);
+	// 		}
+	// 		else
+	// 			dFillMem(0x5000, 0xff, 0x800);
+	// 		selftest_enabled = FALSE;
+	// 	}
+	// }
+	// else {
+	// 	/* We can enable Self Test only if the OS ROM is enabled */
+	// 	/* and we're not accessing extended 320K Compy Shop or 1088K memory */
+	// 	/* Note: in Compy Shop bit 5 (ANTIC access) disables Self Test */
+	// 	if (!selftest_enabled && (byte & 0x01)
+	// 	&& !((byte & 0x30) != 0x30 && ram_size == RAM_320_COMPY_SHOP)
+	// 	&& !((byte & 0x10) == 0 && ram_size == 1088)) {
+	// 		/* Enable Self Test ROM */
+	// 		if (ram_size > 20) {
+	// 			memcpy(under_atarixl_os + 0x1000, memory + 0x5000, 0x800);
+	// 			SetROM(0x5000, 0x57ff);
+	// 		}
+	// 		memcpy(memory + 0x5000, atari_os + 0x1000, 0x800);
+	// 		selftest_enabled = TRUE;
+	// 	}
+	// }
 }
 
 static int cart809F_enabled = FALSE;

@@ -1,75 +1,82 @@
-# Define compilation type
-OSTYPE=msys
-#OSTYPE=a320-od
-#OSTYPE=gcw0-od
+#--param large-function-growth=800 \
+#--param inline-unit-growth=200 \
 
-PRGNAME     = a5200-od
+MAKEFLAGS += --no-builtin-rules
+MAKE = /usr/bin/make
+CFILES := \
+	./emscripten.c \
+	./emu/antic.c \
+	./emu/atari.c \
+	./emu/atari_nds.c \
+	./emu/binload.c \
+	./emu/cartridge.c \
+	./emu/cassette.c \
+	./emu/compfile.c \
+	./emu/cpu.itcm.c \
+	./emu/devices.c \
+	./emu/gtia.c \
+	./emu/input.c \
+	./emu/memory.c \
+	./emu/pbi.c \
+	./emu/pia.c \
+	./emu/pokey.c \
+	./emu/pokeysnd.c \
+	./emu/rtime.c \
+	./emu/screen.c \
+	./emu/sio.c \
+	./emu/sound_nds.c \
+	./emu/statesav.c \
+	./emu/util.c
 
-# define regarding OS, which compiler to use
-ifeq "$(OSTYPE)" "msys"	
-EXESUFFIX = .exe
-TOOLCHAIN = /c/MinGW32
-CC          = gcc
-CCP          = g++
-LD          = g++
-else
-ifeq "$(OSTYPE)" "a320-od"	
-TOOLCHAIN = /opt/opendingux-toolchain/usr
-else
-TOOLCHAIN = /opt/gcw0-toolchain/usr
-endif
-EXESUFFIX = .dge
-CC = $(TOOLCHAIN)/bin/mipsel-linux-gcc
-CCP = $(TOOLCHAIN)/bin/mipsel-linux-g++
-LD = $(TOOLCHAIN)/bin/mipsel-linux-g++
-endif
+FILES := $(patsubst %.c,%.o,$(CFILES))
 
-# add SDL dependencies
-SDL_LIB     = $(TOOLCHAIN)/lib
-SDL_INCLUDE = $(TOOLCHAIN)/include 
-INCLUDES = -I./emu -I./opendingux
+FLAGS := \
+	-O3 \
+    $(CFLAGS) \
+	-I. \
+    -I./emu \
+    -DWRC \
+	-DSOUND \
+  	-Winline \
+  	-fomit-frame-pointer \
+	-fno-strict-overflow \
+	-fsigned-char \
+  	-Wno-strict-aliasing \
+  	-Wno-narrowing \
+    -flto
 
-# change compilation / linking flag options
-ifeq "$(OSTYPE)" "msys"	
-F_OPTS 		= -fomit-frame-pointer -ffunction-sections -ffast-math -fsingle-precision-constant -fsigned-char 
-CC_OPTS		= -O2 $(F_OPTS)
-CFLAGS      = -I$(SDL_INCLUDE) $(INCLUDES) $(CC_OPTS) -DWINSDLDO
-CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions
-LDFLAGS     = -L$(SDL_LIB)  -lmingw32 -lSDLmain -lSDL -mwindows
-else
-F_OPTS 		= -fomit-frame-pointer -ffunction-sections -ffast-math -fsingle-precision-constant -fsigned-char 
-ifeq "$(OSTYPE)" "a320-od"	
-CC_OPTS		= -O2 -mips32 -msoft-float -G0 -D_OPENDINGUX_ $(F_OPTS)
-else
-CC_OPTS		= -O2 -mips32 -mhard-float -G0 -D_OPENDINGUX_ $(F_OPTS)
-endif
-CFLAGS      = -I$(SDL_INCLUDE) $(INCLUDES) $(CC_OPTS)
-CXXFLAGS	= -fno-exceptions -fno-rtti $(CFLAGS) 
-LDFLAGS     = -L$(SDL_LIB) $(CC_OPTS) -lSDL -lpthread
-endif
+LINK_FLAGS := \
+    -O3 \
+	-lz \
+    -s MODULARIZE=1 \
+    -s EXPORT_NAME="'a5200'" \
+    -s TOTAL_MEMORY=67108864 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+	-s ASSERTIONS=0 \
+	-s EXIT_RUNTIME=0 \
+	-s EXPORTED_RUNTIME_METHODS="['FS', 'cwrap']" \
+    -s EXPORTED_FUNCTIONS="['_emInit', '_emStep', '_emSetInput']" \
+	-s INVOKE_RUN=0 \
+    -flto
 
-# Files to be compiled
-SRCDIR   =  ./emu ./opendingux .
-VPATH    = $(SRCDIR)
-SRC_C    = $(foreach dir, $(SRCDIR), $(wildcard $(dir)/*.c))
-SRC_CP   = $(foreach dir, $(SRCDIR), $(wildcard $(dir)/*.cpp))
-OBJ_C    = $(notdir $(patsubst %.c, %.o, $(SRC_C)))
-OBJ_CP   = $(notdir $(patsubst %.cpp, %.o, $(SRC_CP)))
-OBJS     = $(OBJ_C) $(OBJ_CP)
+all: a5200
 
-# Rules to make executable
-$(PRGNAME)$(EXESUFFIX): $(OBJS)  
-ifeq "$(OSTYPE)" "msys"	
-	$(LD) $(CFLAGS) -o $(PRGNAME)$(EXESUFFIX) $^ $(LDFLAGS)
-else
-	$(LD) $(LDFLAGS) -o $(PRGNAME)$(EXESUFFIX) $^
-endif
+a5200:
+	@echo colem
+	$(MAKE) a5200.js
 
-$(OBJ_C) : %.o : %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+a5200.js: $(FILES)
+	emcc -o $@ $(FILES) $(LINK_FLAGS)
 
-$(OBJ_CP) : %.o : %.cpp
-	$(CCP) $(CXXFLAGS) -c -o $@ $<
+%.o : %.cpp
+	emcc -c $< -o $@ \
+	$(FLAGS)
+
+%.o : %.c
+	emcc -c $< -o $@ \
+	$(FLAGS)
 
 clean:
-	rm -f $(PRGNAME)$(EXESUFFIX) *.o
+	@echo "Cleaning"
+	@echo $(FILES)
+	rm -fr *.o */*.o */*/*.o */*/*/*.o */*/*/*/*.o

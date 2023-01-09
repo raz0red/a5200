@@ -96,28 +96,21 @@ UBYTE POKEY_GetByte(UWORD addr)
 		return 0;
 #endif
 	addr &= 0x0f;
-	switch (addr) {
-	case _POT0:
-	case _POT1:
-	case _POT2:
-	case _POT3:
-	case _POT4:
-	case _POT5:
-	case _POT6:
-	case _POT7:
-    if (!POTENA)
-      return 228;
-		if (POT_input[addr] <= pot_scanline) {
-			return POT_input[addr];
-    }
-    return pot_scanline;
-    break;
+	if (addr < 8)
+   {
+      byte = POT_input[addr];
+      if (byte <= pot_scanline)
+         return byte;
+      return pot_scanline;
+   }
+	switch (addr)
+   {
 	case _ALLPOT:
 		{
 			unsigned int i;
 			for (i = 0; i < 8; i++)
 				if (POT_input[i] <= pot_scanline)
-					byte &= ~(1 << i);		// reset bit if pot value known 
+					byte &= ~(1 << i);		// reset bit if pot value known
 		}
     return byte;
     //return POT_all;
@@ -258,9 +251,9 @@ void POKEY_PutByte(UWORD addr, UBYTE byte)
     //POT_all = 0xFF;
 		if (!(SKCTLS & 4)) {
 			pot_scanline = 0;	/* slow pot mode */
-    }  
+    }
     //else
-    //  pot_scanline = 226;//228;  
+    //  pot_scanline = 226;//228;
       //INPUT_potgo(&POT_all);
 		break;
 	case _SEROUT:
@@ -420,9 +413,9 @@ void POKEY_Scanline(void) {
 
 	if (pot_scanline < 228)
 		pot_scanline++;
-  
+
   POT_input[0] = PCPOT_input[0]; POT_input[1] = PCPOT_input[1]; POT_input[2] = PCPOT_input[2]; POT_input[3] = PCPOT_input[3];
-  
+
 	random_scanline_counter += LINE_C;
 
 	/* on nonpatched i/o-operation, enable the cassette timing */

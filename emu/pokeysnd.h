@@ -119,7 +119,7 @@ extern void (*Update_vol_only_sound)(void);
 int Pokey_sound_init(uint32 freq17, uint16 playback_freq, uint8 num_pokeys,
                      unsigned int flags
                      );
-//void Pokey_process(void *sndbuffer, unsigned int sndn);
+void Pokey_process(void *sndbuffer, unsigned int sndn);
 int Pokey_DoInit(void);
 void Pokey_set_mzquality(int quality);
 

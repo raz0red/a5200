@@ -26,45 +26,29 @@
 #include <string.h>
 #include "antic.h"
 #include "atari.h"
-#include "cassette.h"
+#include "cartridge.h"
 #include "cpu.h"
 #include "gtia.h"
 #include "input.h"
-//#include "log.h"
 #include "memory.h"
 #include "pia.h"
-#include "platform.h"
 #include "pokeysnd.h"
 #include "util.h"
-#ifndef CURSES_BASIC
-#include "screen.h" /* for atari_screen */
-#endif
-#ifdef __PLUS
-#include "input_win.h"
-#endif
-
-#ifdef DREAMCAST
-extern int Atari_POT(int);
-#else
-#define Atari_POT(x) 228
-#endif
+#include "platform.h"
 
 extern UBYTE PCPOT_input[8];
-extern unsigned int atari_analog;
+extern int atari_analog[4];
 
-int key_code = AKEY_NONE;
-int key_shift = 0;
-int key_consol = CONSOL_NONE;
-
-int joy_autofire[4] = {AUTOFIRE_OFF, AUTOFIRE_OFF, AUTOFIRE_OFF, AUTOFIRE_OFF};
-
-int joy_block_opposite_directions = 1;
+// int key_code = AKEY_NONE;
+// int key_shift = 0;
+// int key_consol = CONSOL_NONE;
 
 int joy_multijoy = 0;
 
-#define joy_5200_min    6
-#define joy_5200_center 114
-#define joy_5200_max    220
+unsigned int joy_5200_digital_min = JOY_5200_MIN;
+unsigned int joy_5200_digital_max = JOY_5200_MAX;
+unsigned int joy_5200_analog_min  = JOY_5200_MIN;
+unsigned int joy_5200_analog_max  = JOY_5200_MAX;
 
 int mouse_mode = MOUSE_OFF;
 int mouse_port = 0;
@@ -89,24 +73,26 @@ int mouse_joy_inertia = 10;
 #define MOUSE_SHIFT 4
 #endif
 
-static UBYTE STICK[4], OLDSTICK[4];
-static UBYTE TRIG_input[4];
-
-//static int max_scanline_counter;
-//static int scanline_counter;
+static UBYTE STICK[4];
+static UBYTE TRIG_input[4] = {0};
 
 void INPUT_Initialise(void) {
+	int i;
+	for (i = 0; i < 4; i++)
+	{
+		PCPOT_input[i << 1]       = JOY_5200_CENTER;
+		PCPOT_input[(i << 1) + 1] = JOY_5200_CENTER;
+		TRIG_input[i]             = 1;
+	}
 }
+
+extern int press_space;
 
 void INPUT_Frame(void) {
 	int i;
 	static int last_key_code = AKEY_NONE;
 	static int last_key_break = 0;
-  static UBYTE last_stick[4] = {STICK_CENTRE, STICK_CENTRE, STICK_CENTRE, STICK_CENTRE};
-//ALEK static int last_mouse_buttons = 0;
-
-	//scanline_counter = 10000;	/* do nothing in INPUT_Scanline() */
-
+	static UBYTE last_stick[4] = {STICK_CENTRE, STICK_CENTRE, STICK_CENTRE, STICK_CENTRE};
 	/* handle keyboard */
 
 	/* In Atari 5200 joystick there's a second fire button, which acts
@@ -120,7 +106,6 @@ void INPUT_Frame(void) {
 	   (this is simply not emulated).
 	   key_code is used for keypad keys and key_shift is used for 2nd button.
 	*/
-	//i = machine_type == MACHINE_5200 ? key_shift : (key_code == AKEY_BREAK);
   i = key_shift;
 	if (i && !last_key_break) {
 		if (IRQEN & 0x80) {
@@ -139,11 +124,38 @@ void INPUT_Frame(void) {
 			key_code = AKEY_SPACE;
 			press_space = 0;
 		}
-		else 
-    {
+		else
+		{
 			last_key_code = AKEY_NONE;
 		}
 	}
+
+	/* The 5200 has only 4 of the 6 keyboard scan lines connected.
+	 * Pressing one 5200 key is like pressing 4 Atari 800 keys.
+	 * The LSB (bit 0) and bit 5 are the two missing lines.
+	 * When debounce is enabled, multiple keys pressed generate
+	 * no results.
+	 * When debounce is disabled, multiple keys pressed generate
+	 * results only when in numerical sequence.
+	 * Thus the LSB being one of the missing lines is important
+	 * because that causes events to be generated.
+	 * Two events are generated every 64 scan lines
+	 * but this code only does one every frame.
+	 * Bit 5 is different for each keypress because it is one
+	 * of the missing lines. */
+	static int bit5_5200 = 0;
+	if (bit5_5200)
+		key_code &= ~0x20;
+
+	if (0 /*cart_info.keys_debounced*/)
+		bit5_5200 = !bit5_5200;
+	else
+		bit5_5200 = 0;
+
+	/* 5200 2nd fire button generates CTRL as well */
+	if (key_shift)
+		key_code |= AKEY_SHFTCTRL;
+
 	if (key_code >= 0) {
 	  SKSTAT &= ~4;
 		if ((key_code ^ last_key_code) & ~AKEY_SHFTCTRL) {
@@ -164,19 +176,20 @@ void INPUT_Frame(void) {
 		}
 	}
 
-	/* handle joysticks */
+	/* handle joysticks
+	 * > port 0: controller 1 + 2 */
 	i = Atari_PORT(0);
-  OLDSTICK[0] = STICK[0];OLDSTICK[1] = STICK[1];
 	STICK[0] = i & 0x0f;
 	STICK[1] = (i >> 4) & 0x0f;
 
-/*	i = Atari_PORT(1);
+	/* We don't support the other two sticks, so this will result
+	 * in both being in the CENTER position... */
+	i = Atari_PORT(1);
 	STICK[2] = i & 0x0f;
-	STICK[3] = (i >> 4) & 0x0f;*/
+	STICK[3] = (i >> 4) & 0x0f;
 
-	//ALEK for (i = 0; i < 4; i++) {
-  for (i = 0; i < 2; i++) {
-		//if (joy_block_opposite_directions) {
+	for (i = 0; i < 2; i++) {
+		if (STICK[i] != STICK_CENTRE) {
 			if ((STICK[i] & 0x0c) == 0) {	/* right and left simultaneously */
 				if (last_stick[i] & 0x04)	/* if wasn't left before, move left */
 					STICK[i] |= 0x08;
@@ -197,66 +210,39 @@ void INPUT_Frame(void) {
 				last_stick[i] &= 0x0c;
 				last_stick[i] |= STICK[i] & 0x03;
 			}
-    /*
 		}
 		else
-			last_stick[i] = STICK[i];*/
+			last_stick[i] = STICK[i];
+
 		TRIG_input[i] = Atari_TRIG(i);
-		//ALEK if ((joy_autofire[i] == AUTOFIRE_FIRE && !TRIG_input[i]) || (joy_autofire[i] == AUTOFIRE_CONT))
-		//ALEK 	TRIG_input[i] = (nframes & 2) ? 1 : 0;
 	}
 
-/*
-	// handle analog joysticks in Atari 5200 
-	if (machine_type != MACHINE_5200) {
-		for (i = 0; i < 8; i++)
-			POT_input[i] = Atari_POT(i);
+	for (i = 0; i < 4; i++) {
+		if (atari_analog[i]) {
+			PCPOT_input[(i << 1) + 0] = Atari_POT((i << 1) + 0);
+			PCPOT_input[(i << 1) + 1] = Atari_POT((i << 1) + 1);
+		}
+		else {
+			if ((STICK[i] & (STICK_CENTRE ^ STICK_LEFT)) == 0) {
+				PCPOT_input[(i << 1) + 0] = joy_5200_digital_min;
+			}
+			else if ((STICK[i] & (STICK_CENTRE ^ STICK_RIGHT)) == 0) {
+				PCPOT_input[(i << 1) + 0] = joy_5200_digital_max;
+			}
+			else {
+				PCPOT_input[(i << 1) + 0] = JOY_5200_CENTER;
+			}
+			if ((STICK[i] & (STICK_CENTRE ^ STICK_FORWARD)) == 0) {
+				PCPOT_input[(i << 1) + 1] = joy_5200_digital_min;
+			}
+			else if ((STICK[i] & (STICK_CENTRE ^ STICK_BACK)) == 0) {
+				PCPOT_input[(i << 1) + 1] = joy_5200_digital_max;
+			}
+			else {
+				PCPOT_input[(i << 1) + 1] = JOY_5200_CENTER;
+			}
+		}
 	}
-	else {
-*/  
-#define MAX_FORCE 6
-	for (i = 0; i < 2; i++) {
-      if ((STICK[i] & (STICK_CENTRE ^ STICK_LEFT)) == 0) {	
-        if (atari_analog) {
-          if (PCPOT_input[2 * i] >joy_5200_min) PCPOT_input[2 * i] -= MAX_FORCE;
-          if (PCPOT_input[2 * i] <=joy_5200_min) PCPOT_input[2 * i]= joy_5200_min; 
-        }
-        else
-          PCPOT_input[2 * i]= joy_5200_min; 
-      }
-      else if ((STICK[i] & (STICK_CENTRE ^ STICK_RIGHT)) == 0) {
-        if (atari_analog) {
-          if (PCPOT_input[2 * i] <joy_5200_max) PCPOT_input[2 * i] += MAX_FORCE;
-          if (PCPOT_input[2 * i] >=joy_5200_max) PCPOT_input[2 * i]= joy_5200_max; 
-        }
-        else
-          PCPOT_input[2 * i]= joy_5200_max; 
-      }
-      else {
-        if (!atari_analog) PCPOT_input[2 * i] = joy_5200_center;  
-      }
-      if ((STICK[i] & (STICK_CENTRE ^ STICK_FORWARD)) == 0) {
-        if (atari_analog) {
-          if (PCPOT_input[2 * i +1] >joy_5200_min) PCPOT_input[2 * i +1] -= MAX_FORCE;
-          if (PCPOT_input[2 * i +1] <=joy_5200_min) PCPOT_input[2 * i +1]= joy_5200_min; 
-        }
-        else {
-          PCPOT_input[2 * i +1]= joy_5200_min;
-        }
-      }
-      else if ((STICK[i] & (STICK_CENTRE ^ STICK_BACK)) == 0) {
-        if (atari_analog) {
-          if (PCPOT_input[2 * i +1] <joy_5200_max) PCPOT_input[2 * i +1] += MAX_FORCE;
-          if (PCPOT_input[2 * i +1] >=joy_5200_max) PCPOT_input[2 * i +1]= joy_5200_max; 
-        }
-        else
-          PCPOT_input[2 * i +1]= joy_5200_max;
-      }
-      else {
-        if (!atari_analog) PCPOT_input[2 * i + 1] = joy_5200_center;
-      }
-	}
-
 
 	TRIG[0] = TRIG_input[0];
 	TRIG[1] = TRIG_input[1];
@@ -265,24 +251,3 @@ void INPUT_Frame(void) {
 	PORT_input[0] = (STICK[1] << 4) | STICK[0];
 	PORT_input[1] = (STICK[3] << 4) | STICK[2];
 }
-
-/*
-void INPUT_Scanline(void) {
-	if (--scanline_counter == 0) {
-		UBYTE stick = mouse_step();
-		if (mouse_mode == MOUSE_TRAK) {
-			// bit 3 toggles - vertical movement, bit 2 = 0 - up 
-			// bit 1 toggles - horizontal movement, bit 0 = 0 - left 
-			STICK[mouse_port] = ((mouse_y & 1) << 3) | ((stick & 1) << 2)
-								| ((mouse_x & 1) << 1) | ((stick & 4) >> 2);
-		}
-		else {
-			STICK[mouse_port] = (mouse_mode == MOUSE_AMIGA ? mouse_amiga_codes : mouse_st_codes)
-								[(mouse_y & 3) * 4 + (mouse_x & 3)];
-		}
-		PORT_input[0] = (STICK[1] << 4) | STICK[0];
-		PORT_input[1] = (STICK[3] << 4) | STICK[2];
-		scanline_counter = max_scanline_counter;
-	}
-}
-*/
